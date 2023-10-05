@@ -782,3 +782,5 @@ if __name__ == "__main__":
             print(trainer.profiler.summary())
 
 # python main.py -t --base PATH/TO/CONFIG --logdir PATH/TO/LOGDIR --name RUNNAME
+
+#python main.py -t --base /export/home/ffeiden/Projects/ControlNet-XS/configs/training/sd/tscldm_v21_cross_encD_2contorls.yaml --logdir /export/data/vislearn/rother_subgroup/feiden/logdir --name Test_Depth_Env

@@ -17,7 +17,7 @@ model:
     monitor: val/loss_simple_ema
     scale_factor: 0.18215
     use_ema: False
-    sync_path: '/export/data/vislearn/rother_subgroup/dzavadsk/models/pretrained_originals/StableDiffusion/pretrained/v2-1_512-ema-pruned.ckpt'
+    sync_path: '/export/data/vislearn/rother_subgroup/feiden/models/pretrained/stable_diffusion/v2-1_512-ema-pruned.ckpt'
     # sync_path: '/home/hd/hd_hd/hd_ud441/diffusionModels/latent_diffusion/logs/pretrained/v2-1_512-ema-pruned.ckpt'
     # sync_path: null
     synch_control: False
@@ -131,4 +131,4 @@ lightning:
     accumulate_grad_batches: 1
     accelerator: ddp
     max_steps: 500000
-    gpus: 0, #1,2,3
+    gpus: 1, #1,2,3
