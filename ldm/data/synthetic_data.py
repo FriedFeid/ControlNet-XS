@@ -338,15 +338,16 @@ class BlockWorld(Dataset):
 
 class BlockWorldTrain(BlockWorld):
     # default to random_crop=True
-    def __init__(self, size=None, random_resized_crop=False,# random_crop=True,
-                interpolation="bicubic", scale=[1.0, 1.0], control_mode='canny',
-                data_root=None, data_csv=None, use_edges=True, use_render=True, use_distance=True,
-                use_depth_maps=False,
+    def __init__(self, size=None, random_resized_crop=False, 
+                 interpolation='bicubic', scale=[1.0, 1.0], control=['Depth'], 
+                 full_set=True, data_csv=False, data_root=None, 
+                 use_pillow=True, use_edges=True, use_render=True, use_distance=True, 
+                 use_depth_maps=False
                 ):
         super().__init__(
             size=size, interpolation=interpolation,
             scale=scale, random_resized_crop=random_resized_crop,
-            control_mode=control_mode, data_root=data_root, data_csv=data_csv,
+            control=control, data_root=data_root, data_csv=data_csv,
             use_edges=use_edges, use_render=use_render, use_distance=use_distance,
             use_depth_maps=use_depth_maps,
                           )
@@ -356,12 +357,14 @@ class BlockWorldTrain(BlockWorld):
 
 
 class BlockWorldValidation(BlockWorld):
-    def __init__(self, size=None,# random_crop=False,
-                  interpolation="bicubic", control_mode='canny', data_root=None, data_csv=None,
-                  use_edges=True, use_render=True, use_distance=True, use_depth_maps=False,
+    def __init__(self, size=None, random_resized_crop=False, 
+                 interpolation='bicubic', scale=[1.0, 1.0], control=['Depth'], 
+                 full_set=True, data_csv=False, data_root=None, 
+                 use_pillow=True, use_edges=True, use_render=True, use_distance=True, 
+                 use_depth_maps=False
                   ):
         super().__init__(size=size, interpolation=interpolation,
-                         control_mode=control_mode, data_root=data_root,
+                         control=control, data_root=data_root,
                          data_csv=data_csv, use_edges=use_edges, use_render=use_render,
                          use_distance=use_distance, use_depth_maps=use_depth_maps)
 
