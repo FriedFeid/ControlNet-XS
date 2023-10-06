@@ -9,7 +9,7 @@ import bisect
 from PIL import Image
 from glob import glob
 from einops import rearrange, repeat
-import albumentations
+# import albumentations
 import random
 import cv2
 import pandas as pd

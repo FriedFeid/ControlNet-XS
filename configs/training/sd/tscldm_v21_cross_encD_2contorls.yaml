@@ -45,9 +45,7 @@ model:
         guiding: 'encoder_double'
         two_stream_mode: 'cross'
         control_model_ratio: 0.0125
-        debugger:
-          skip_enc_infusion: False
-          skip_dec_infusion: False
+
 
 
     unet_config:
@@ -129,6 +127,6 @@ lightning:
   trainer:
     benchmark: True
     accumulate_grad_batches: 1
-    accelerator: ddp
+    accelerator: cuda
     max_steps: 500000
-    gpus: 1, #1,2,3
+    gpus: 2, #1,2,3
