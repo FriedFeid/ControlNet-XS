@@ -107,11 +107,7 @@ data:
       target: ldm.data.synthetic_data.BlockWorldTrain
       params:
         control: ['Depth', 'Env']
-    validation:
-      target: ldm.data.synthetic_data.BlockWorldValidation
-      params:
-        control_mode: ['Depth', 'Env']
-        
+
         
 lightning:
   callbacks:
@@ -129,4 +125,4 @@ lightning:
     accumulate_grad_batches: 1
     accelerator: cuda
     max_steps: 500000
-    gpus: 2, #1,2,3
+    devices: 1, #1,2,3
