@@ -107,6 +107,16 @@ data:
       target: ldm.data.synthetic_data.BlockWorldTrain
       params:
         control: ['Depth', 'Env']
+        full_set: False
+        data_start: 0
+        data_stop: 500
+    validation:
+      target: ldm.data.synthetic_data.BlockWorldValidation
+      params:
+        control: ['Depth', 'Env']
+        full_set: False
+        data_start: 50_000
+        data_stop: 50_470
 
         
 lightning:
@@ -114,11 +124,11 @@ lightning:
     image_logger:
       target: main.ImageLogger
       params:
-        batch_frequency: 10000
+        batch_frequency: 10
         max_images: 8
         increase_log_steps: False
     metrics_over_trainsteps_checkpoint:
-        every_n_train_steps: 10000
+        every_n_train_steps: 10
 
   trainer:
     benchmark: True
