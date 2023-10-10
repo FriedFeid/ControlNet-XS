@@ -1,4 +1,8 @@
-import argparse, os, sys, datetime, glob, importlib, csv
+import argparse
+import os
+import sys
+import datetime
+import glob
 import numpy as np
 import time
 import torch
@@ -7,13 +11,13 @@ import pytorch_lightning as pl
 
 from packaging import version
 from omegaconf import OmegaConf
-from torch.utils.data import random_split, DataLoader, Dataset, Subset
+from torch.utils.data import DataLoader, Dataset
 from functools import partial
 from PIL import Image
 
 from pytorch_lightning import seed_everything
 from pytorch_lightning.trainer import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint, Callback, LearningRateMonitor
+from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
 from pytorch_lightning.utilities import rank_zero_info
 
@@ -21,7 +25,8 @@ from ldm.data.base import Txt2ImgIterableBaseDataset
 from ldm.util import instantiate_from_config
 
 import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 
 def load_model_from_config(config, ckpt, verbose=False):
     print(f"Loading model from {ckpt}")
@@ -490,7 +495,6 @@ if __name__ == "__main__":
     #           params:
     #               key: value
 
-
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
     # add cwd for convenience and to make classes in this file available when
@@ -556,7 +560,7 @@ if __name__ == "__main__":
         trainer_config["accelerator"] = "cuda"
         for k in nondefault_trainer_args(opt):
             trainer_config[k] = getattr(opt, k)
-        if not "gpus" in trainer_config:
+        if "gpus" not in trainer_config:
             del trainer_config["accelerator"]
             cpu = True
         else:
@@ -571,7 +575,6 @@ if __name__ == "__main__":
             model = load_model_from_config(config, opt.load_pretrained_ckpt)
         else:
             model = instantiate_from_config(config.model)
-        
 
         # trainer and callbacks
         trainer_kwargs = dict()
@@ -622,7 +625,7 @@ if __name__ == "__main__":
         if "modelcheckpoint" in lightning_config:
             modelckpt_cfg = lightning_config.modelcheckpoint
         else:
-            modelckpt_cfg =  OmegaConf.create()
+            modelckpt_cfg = OmegaConf.create()
         modelckpt_cfg = OmegaConf.merge(default_modelckpt_cfg, modelckpt_cfg)
         print(f"Merged modelckpt-cfg: \n{modelckpt_cfg}")
         if version.parse(pl.__version__) < version.parse('1.4.0'):
@@ -692,9 +695,10 @@ if __name__ == "__main__":
 
         trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
 
+        # Friedrich: Changed for pt 2
         args = parser.parse_args()
         trainer = Trainer(**trainer_config, **trainer_kwargs)
-        trainer.logdir = logdir  ###
+        trainer.logdir = logdir
 
         # data
         data = instantiate_from_config(config.data)
@@ -729,7 +733,6 @@ if __name__ == "__main__":
             print("++++ NOT USING LR SCALING ++++")
             print(f"Setting learning rate to {model.learning_rate:.2e}")
 
-
         # allow checkpointing via USR1
         def melk(*args, **kwargs):
             # run all checkpoint hooks
@@ -738,12 +741,10 @@ if __name__ == "__main__":
                 ckpt_path = os.path.join(ckptdir, "last.ckpt")
                 trainer.save_checkpoint(ckpt_path)
 
-
         def divein(*args, **kwargs):
             if trainer.global_rank == 0:
-                import pudb;
+                import pudb
                 pudb.set_trace()
-
 
         import signal
 
@@ -778,5 +779,4 @@ if __name__ == "__main__":
             print(trainer.profiler.summary())
 
 # python main.py -t --base PATH/TO/CONFIG --logdir PATH/TO/LOGDIR --name RUNNAME
-
-#python main.py -t --base /export/home/ffeiden/Projects/ControlNet-XS/configs/training/sd/tscldm_v21_cross_encD_2contorls.yaml --logdir /export/data/vislearn/rother_subgroup/feiden/logdir --name Test_Depth_Env
+# python main.py -t --base /export/home/ffeiden/Projects/ControlNet-XS/configs/training/sd/tscldm_v21_cross_encD_2contorls.yaml --logdir /export/data/vislearn/rother_subgroup/feiden/logdir --name Test_Depth_Env
