@@ -18,14 +18,18 @@ from PIL import Image
 from pytorch_lightning import seed_everything
 from pytorch_lightning.trainer import Trainer
 from pytorch_lightning.callbacks import Callback
+from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
 from pytorch_lightning.utilities import rank_zero_info
 
 from ldm.data.base import Txt2ImgIterableBaseDataset
 from ldm.util import instantiate_from_config
 
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+# import warnings
+# warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+# To utilize the A100 GPUS:
+torch.set_float32_matmul_precision('medium')
 
 
 def load_model_from_config(config, ckpt, verbose=False):
@@ -591,7 +595,7 @@ if __name__ == "__main__":
                 }
             },
             "testtube": {
-                "target": "pytorch_lightning.loggers.CSVLogger",
+                "target": "pytorch_lightning.loggers.TensorBoardLogger",
                 "params": {
                     "name": "testtube",
                     "save_dir": logdir,

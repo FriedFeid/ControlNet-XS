@@ -299,26 +299,28 @@ class BlockWorld(Dataset):
 
         hints = []
         controls = 0
+        # The grid must be in type np.array with uint8 [0, 255]
         grid = [instance_['render']]
         for key in self.control:
             if key == 'Env':
                 hints.append(instance_[key])
-                grid.append(instance_[key].clip(0, 1))
+                temp = instance_[key].clip(0, 1)
+                grid.append(temp)
                 controls += 1
             else:
                 hints.append(instance_[key])
+                temp = instance_[key]
                 grid.append(instance_[key])
                 controls += 1
 
         example = {}
         example['hint'] = np.concatenate(hints, axis=2)
-        example['image'] = instance_['render']/127.5 - 1.0
+        example['image'] = instance_['render'] * 2 - 1
 
         keys = self.hint_dic['Env'][idx].split('.exr')[0]
         if '/' in keys:
             keys = keys.split('/')[-1]
         example['caption'] = self.Labels[keys]['Prompt']
-        print(keys, self.hint_dic[key][idx].split('/')[-1])
 
         example['control_grid'] = create_image_grid(np.stack(grid), (1, controls + 1))
 

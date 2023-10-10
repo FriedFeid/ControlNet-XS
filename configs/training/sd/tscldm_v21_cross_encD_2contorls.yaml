@@ -21,6 +21,7 @@ model:
     # sync_path: '/home/hd/hd_hd/hd_ud441/diffusionModels/latent_diffusion/logs/pretrained/v2-1_512-ema-pruned.ckpt'
     # sync_path: null
     synch_control: False
+    control_mode: 'light'
 
     control_stage_config:
       target: ldm.modules.diffusionmodules.twoStreamControl.TwoStreamControlNet
@@ -45,6 +46,8 @@ model:
         guiding: 'encoder_double'
         two_stream_mode: 'cross'
         control_model_ratio: 0.0125
+        learn_embedding: False
+
 
 
 
@@ -100,8 +103,8 @@ model:
 data:
   target: main.DataModuleFromConfig
   params:
-    batch_size: 5
-    num_workers: 5
+    batch_size: 8
+    num_workers: 8
     wrap: false
     train:
       target: ldm.data.synthetic_data.BlockWorldTrain
@@ -109,14 +112,14 @@ data:
         control: ['Depth', 'Env']
         full_set: False
         data_start: 0
-        data_stop: 500
+        data_stop: 50_000
     validation:
       target: ldm.data.synthetic_data.BlockWorldValidation
       params:
         control: ['Depth', 'Env']
         full_set: False
         data_start: 50_000
-        data_stop: 50_470
+        data_stop: 50_030
 
         
 lightning:
@@ -124,15 +127,15 @@ lightning:
     image_logger:
       target: main.ImageLogger
       params:
-        batch_frequency: 10
+        batch_frequency: 3_000
         max_images: 8
         increase_log_steps: False
     metrics_over_trainsteps_checkpoint:
-        every_n_train_steps: 10
+        every_n_train_steps: 3_000
 
   trainer:
     benchmark: True
     accumulate_grad_batches: 1
     accelerator: cuda
     max_steps: 500000
-    devices: 1, #1,2,3
+    devices: 7, #1,2,3

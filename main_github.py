@@ -18,6 +18,7 @@ from omegaconf import OmegaConf
 from packaging import version
 from PIL import Image
 from pytorch_lightning import seed_everything
+from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.trainer import Trainer

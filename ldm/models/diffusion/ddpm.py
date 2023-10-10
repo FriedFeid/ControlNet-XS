@@ -32,7 +32,6 @@ from ldm.models.diffusion.ddim import DDIMSampler
 from annotator.midas import MidasDetector
 
 
-
 __conditioning_keys__ = {'concat': 'c_concat',
                          'crossattn': 'c_crossattn',
                          'adm': 'y'}
@@ -112,12 +111,13 @@ class DDPM(pl.LightningModule):
         if monitor is not None:
             self.monitor = monitor
         self.make_it_fit = make_it_fit
-        if reset_ema: assert exists(ckpt_path)
+        if reset_ema:
+            assert exists(ckpt_path)
         if ckpt_path is not None:
             self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys, only_model=load_only_unet)
             if reset_ema:
                 assert self.use_ema
-                print(f"Resetting ema to pure model weights. This is useful when restoring from an ema-only checkpoint.")
+                print("Resetting ema to pure model weights. This is useful when restoring from an ema-only checkpoint.")
                 self.model_ema = LitEma(self.model)
         if reset_num_ema_updates:
             print(" +++++++++++ WARNING: RESETTING NUM_EMA UPDATES TO ZERO +++++++++++ ")
@@ -232,7 +232,7 @@ class DDPM(pl.LightningModule):
                     desc="Fitting old weights to new weights",
                     total=n_params
             ):
-                if not name in sd:
+                if name not in sd:
                     continue
                 old_shape = sd[name].shape
                 new_shape = param.shape
@@ -579,7 +579,7 @@ class LatentDiffusion(DDPM):
             if reset_ema:
                 assert self.use_ema
                 print(
-                    f"Resetting ema to pure model weights. This is useful when restoring from an ema-only checkpoint.")
+                    "Resetting ema to pure model weights. This is useful when restoring from an ema-only checkpoint.")
                 self.model_ema = LitEma(self.model)
         if reset_num_ema_updates:
             print(" +++++++++++ WARNING: RESETTING NUM_EMA UPDATES TO ZERO +++++++++++ ")
@@ -980,7 +980,7 @@ class LatentDiffusion(DDPM):
         nonzero_mask = (1 - (t == 0).float()).reshape(b, *((1,) * (len(x.shape) - 1)))
 
         if return_codebook_ids:
-            # Support droped 
+            # Support droped
             # TODO: Delete this
             logits = logits
             return model_mean + nonzero_mask * (0.5 * model_log_variance).exp() * noise, logits.argmax(dim=1)
@@ -1010,7 +1010,7 @@ class LatentDiffusion(DDPM):
         if cond is not None:
             if isinstance(cond, dict):
                 cond = {key: cond[key][:batch_size] if not isinstance(cond[key], list) else
-                list(map(lambda x: x[:batch_size], cond[key])) for key in cond}
+                        list(map(lambda x: x[:batch_size], cond[key])) for key in cond}
             else:
                 cond = [c[:batch_size] for c in cond] if isinstance(cond, list) else cond[:batch_size]
 
@@ -1019,7 +1019,7 @@ class LatentDiffusion(DDPM):
         iterator = tqdm(reversed(range(0, timesteps)), desc='Progressive Generation',
                         total=timesteps) if verbose else reversed(
             range(0, timesteps))
-        if type(temperature) == float:
+        if type(temperature) is float:
             temperature = [temperature] * timesteps
 
         for i in iterator:
@@ -1041,8 +1041,10 @@ class LatentDiffusion(DDPM):
 
             if i % log_every_t == 0 or i == timesteps - 1:
                 intermediates.append(x0_partial)
-            if callback: callback(i)
-            if img_callback: img_callback(img, i)
+            if callback:
+                callback(i)
+            if img_callback:
+                img_callback(img, i)
         return img, intermediates
 
     @torch.no_grad()
@@ -1089,8 +1091,10 @@ class LatentDiffusion(DDPM):
 
             if i % log_every_t == 0 or i == timesteps - 1:
                 intermediates.append(img)
-            if callback: callback(i)
-            if img_callback: img_callback(img, i)
+            if callback:
+                callback(i)
+            if img_callback:
+                img_callback(img, i)
 
         if return_intermediates:
             return img, intermediates
@@ -1105,7 +1109,7 @@ class LatentDiffusion(DDPM):
         if cond is not None:
             if isinstance(cond, dict):
                 cond = {key: cond[key][:batch_size] if not isinstance(cond[key], list) else
-                list(map(lambda x: x[:batch_size], cond[key])) for key in cond}
+                        list(map(lambda x: x[:batch_size], cond[key])) for key in cond}
             else:
                 cond = [c[:batch_size] for c in cond] if isinstance(cond, list) else cond[:batch_size]
         return self.p_sample_loop(cond,
@@ -1248,7 +1252,7 @@ class LatentDiffusion(DDPM):
 
         if inpaint:
             # make a simple center square
-            b, h, w = z.shape[0], z.shape[2], z.shape[3]
+            _, h, w = z.shape[0], z.shape[2], z.shape[3]
             mask = torch.ones(N, h, w).to(self.device)
             # zeros will be filled in
             mask[:, h // 4:3 * h // 4, w // 4:3 * w // 4] = 0.
@@ -1470,7 +1474,7 @@ class LatentUpscaleDiffusion(LatentDiffusion):
                     uc[k] = [uc_tmp]
                 elif k == "c_adm":  # todo: only run with text-based guidance?
                     assert isinstance(c[k], torch.Tensor)
-                    #uc[k] = torch.ones_like(c[k]) * self.low_scale_model.max_noise_level
+                    # uc[k] = torch.ones_like(c[k]) * self.low_scale_model.max_noise_level
                     uc[k] = c[k]
                 elif isinstance(c[k], list):
                     uc[k] = [c[k][i] for i in range(len(c[k]))]
@@ -1522,7 +1526,8 @@ class LatentFinetuneDiffusion(LatentDiffusion):
         self.keep_dims = keep_finetune_dims
         self.c_concat_log_start = c_concat_log_start
         self.c_concat_log_end = c_concat_log_end
-        if exists(self.finetune_keys): assert exists(ckpt_path), 'can only finetune from a given checkpoint'
+        if exists(self.finetune_keys):
+            assert exists(ckpt_path), 'can only finetune from a given checkpoint'
         if exists(ckpt_path):
             self.init_from_ckpt(ckpt_path, ignore_keys)
 
@@ -1738,6 +1743,7 @@ class LatentDepth2ImageDiffusion(LatentFinetuneDiffusion):
         depth = self.depth_model(args[0][self.depth_stage_key])
         depth_min, depth_max = torch.amin(depth, dim=[1, 2, 3], keepdim=True), \
                                torch.amax(depth, dim=[1, 2, 3], keepdim=True)
+
         log["depth"] = 2. * (depth - depth_min) / (depth_max - depth_min) - 1.
         return log
 
