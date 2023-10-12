@@ -327,7 +327,7 @@ class SetupCallback(Callback):
 class ImageLogger(Callback):
     def __init__(self, batch_frequency, max_images, ckptdir, clamp=True, increase_log_steps=True,
                  rescale=True, disabled=False, log_on_batch_idx=False, log_first_step=False,
-                 log_images_kwargs=None):
+                 log_images_kwargs=None, save_weights=False):
         super().__init__()
         self.rescale = rescale
         self.batch_freq = batch_frequency
@@ -344,6 +344,7 @@ class ImageLogger(Callback):
         self.log_on_batch_idx = log_on_batch_idx
         self.log_images_kwargs = log_images_kwargs if log_images_kwargs else {}
         self.log_first_step = log_first_step
+        self.save_weights = False
 
     @rank_zero_only
     def _testtube(self, pl_module, images, batch_idx, split):
@@ -423,8 +424,10 @@ class ImageLogger(Callback):
         if not self.disabled and (pl_module.global_step > 0 or self.log_first_step):
             self.log_img(pl_module, batch, batch_idx, split="train")
         if trainer.global_step % self.batch_freq == 0:
-            ckpt_path = ckpt_path = os.path.join(self.ckptdir, 'trainstep_checkpoints', f"{trainer.global_step:04}.ckpt")
-            trainer.save_checkpoint(ckpt_path)
+            # Friedrich: Put this out since it will require a lot of free space
+            if self.save_weights:
+                ckpt_path = ckpt_path = os.path.join(self.ckptdir, 'trainstep_checkpoints', f"{trainer.global_step:04}.ckpt")
+                trainer.save_checkpoint(ckpt_path)
 
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         if not self.disabled and pl_module.global_step > 0:
@@ -442,7 +445,7 @@ class CUDACallback(Callback):
         torch.cuda.synchronize(trainer.strategy.root_device)
         self.start_time = time.time()
 
-    def on_train_epoch_end(self, trainer, pl_module, outputs):
+    def on_train_epoch_end(self, trainer, pl_module):
         torch.cuda.synchronize(trainer.strategy.root_device)
         max_memory = torch.cuda.max_memory_allocated(trainer.strategy.root_device) / 2 ** 20
         epoch_time = time.time() - self.start_time
@@ -656,6 +659,7 @@ if __name__ == "__main__":
                     "max_images": 4,
                     "clamp": True,
                     "ckptdir": ckptdir,
+                    "save_weights": False,
                 }
             },
             "learning_rate_logger": {
@@ -687,9 +691,10 @@ if __name__ == "__main__":
                          "dirpath": os.path.join(ckptdir, 'trainstep_checkpoints'),
                          "filename": "{epoch:06}-{step:09}",
                          "verbose": True,
-                         'save_top_k': -1,
+                         'save_top_k': 5,
                          'every_n_train_steps': 10000,
-                         'save_weights_only': True
+                         'save_weights_only': True,
+                         'monitor': "val/loss",
                      }
                      }
             }
@@ -783,4 +788,4 @@ if __name__ == "__main__":
             print(trainer.profiler.summary())
 
 # python main.py -t --base PATH/TO/CONFIG --logdir PATH/TO/LOGDIR --name RUNNAME
-# python main.py -t --base /export/home/ffeiden/Projects/ControlNet-XS/configs/training/sd/tscldm_v21_cross_encD_2contorls.yaml --logdir /export/data/vislearn/rother_subgroup/feiden/logdir --name Test_Depth_Env
+# python main.py -t --base /export/home/ffeiden/Projects/ControlNet-XS/configs/training/sd/tscldm_v21_cross_encD_2contorls.yaml --logdir /export/data/ffeiden/ControlNetXS/logdir/ --name Test_Depth_Env

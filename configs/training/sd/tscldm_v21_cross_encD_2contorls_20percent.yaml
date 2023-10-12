@@ -45,7 +45,7 @@ model:
         infusion2base: 'add'
         guiding: 'encoder_double'
         two_stream_mode: 'cross'
-        control_model_ratio: 0.0125
+        control_model_ratio: 0.20
         learn_embedding: False
 
 
@@ -141,4 +141,4 @@ lightning:
     accumulate_grad_batches: 1
     accelerator: cuda
     max_steps: 500000
-    devices: 7, #1,2,3
+    devices: 6, #1,2,3
