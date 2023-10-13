@@ -17,8 +17,6 @@ import Imath
 
 # from light_util import get_perspective
 
-from ldm.data.util import create_image_grid
-
 from glob import glob
 from natsort import natsorted
 
@@ -300,17 +298,15 @@ class BlockWorld(Dataset):
         hints = []
         controls = 0
         # The grid must be in type np.array with uint8 [0, 255]
-        grid = [instance_['render']]
+        grid = {}
         for key in self.control:
             if key == 'Env':
                 hints.append(instance_[key])
-                temp = instance_[key].clip(0, 1)
-                grid.append(temp)
+                grid['Env'] = instance_[key]
                 controls += 1
             else:
                 hints.append(instance_[key])
-                temp = instance_[key]
-                grid.append(instance_[key])
+                grid[key] = (instance_[key])
                 controls += 1
 
         example = {}
@@ -322,7 +318,7 @@ class BlockWorld(Dataset):
             keys = keys.split('/')[-1]
         example['caption'] = self.Labels[keys]['Prompt']
 
-        example['control_grid'] = create_image_grid(np.stack(grid), (1, controls + 1))
+        example['control_grid'] = grid
 
         return example
 

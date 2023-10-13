@@ -1904,7 +1904,8 @@ class TwoStreamControlLDM(LatentDiffusion):
         elif self.control_mode == 'image':
             log["control"] = c_cat
         elif self.control_mode == 'light':
-            log['control'] = rearrange(batch['control_grid'] * 2. - 1., 'b h w c -> b c h w')
+            temp = batch['control_grid']
+            log['control'] = temp
         else:
             log["control"] = c_cat * 2.0 - 1.0
         log["conditioning"] = log_txt_as_img((512, 512), batch[self.cond_stage_key], size=16)

@@ -13,9 +13,9 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--t", "--base", 
-            "/export/home/ffeiden/Projects/ControlNet-XS/configs/training/sd/tscldm_v21_cross_encD_2contorls.yaml",
-            "--logdir", "/export/data/vislearn/rother_subgroup/feiden/logdir", 
-            "--name", "Test_Depth_Env"]
+            "/export/home/ffeiden/Projects/ControlNet-XS/configs/training/sd/tscldm_v21_cross_encD_2contorls_debugging.yaml",
+            "--logdir", "/export/data/ffeiden/ControlNetXS/logdir/", 
+            "--name", "DEBUGGING"]
         }, 
         {
             "name": "Current",

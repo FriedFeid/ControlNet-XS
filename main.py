@@ -327,7 +327,7 @@ class SetupCallback(Callback):
 class ImageLogger(Callback):
     def __init__(self, batch_frequency, max_images, ckptdir, clamp=True, increase_log_steps=True,
                  rescale=True, disabled=False, log_on_batch_idx=False, log_first_step=False,
-                 log_images_kwargs=None, save_weights=False):
+                 log_images_kwargs=None, save_weights=False, single_log=False):
         super().__init__()
         self.rescale = rescale
         self.batch_freq = batch_frequency
@@ -345,6 +345,7 @@ class ImageLogger(Callback):
         self.log_images_kwargs = log_images_kwargs if log_images_kwargs else {}
         self.log_first_step = log_first_step
         self.save_weights = save_weights
+        self.singel_log = single_log
 
     @rank_zero_only
     def _testtube(self, pl_module, images, batch_idx, split):
@@ -361,21 +362,41 @@ class ImageLogger(Callback):
     def log_local(self, save_dir, split, images,
                   global_step, current_epoch, batch_idx):
         root = os.path.join(save_dir, "images", split)
-        for k in images:
-            grid = torchvision.utils.make_grid(images[k], nrow=4)
-            if self.rescale:
-                grid = (grid + 1.0) / 2.0  # -1,1 -> 0,1; c,h,w
-            grid = grid.transpose(0, 1).transpose(1, 2).squeeze(-1)
-            grid = grid.numpy()
-            grid = (grid * 255).astype(np.uint8)
-            filename = "{}_gs-{:06}_e-{:06}_b-{:06}.png".format(
-                k,
-                global_step,
-                current_epoch,
-                batch_idx)
+        if self.singel_log:
+            for k in images:
+                grid = torchvision.utils.make_grid(images[k], nrow=self.max_images)
+                if self.rescale:
+                    grid = (grid + 1.0) / 2.0  # -1,1 -> 0,1; c,h,w
+                grid = grid.transpose(0, 1).transpose(1, 2).squeeze(-1)
+                grid = grid.numpy()
+                grid = (grid * 255).astype(np.uint8)
+                filename = "{}_gs-{:06}_e-{:06}_b-{:06}.png".format(
+                    k,
+                    global_step,
+                    current_epoch,
+                    batch_idx)
+                path = os.path.join(root, filename)
+                os.makedirs(os.path.split(path)[0], exist_ok=True)
+                Image.fromarray(grid).save(path)
+        else:
+            rows = []
+            for key in images:
+                grid = torchvision.utils.make_grid(images[key], nrow=self.max_images)
+                if self.rescale:
+                    grid = (grid + 1.0) / 2.0  # -1,1 -> 0,1; c,h,w
+                grid = grid.transpose(0, 1).transpose(1, 2).squeeze(-1)
+                grid = grid.numpy()
+                grid = (grid * 255).astype(np.uint8)
+                rows.append(grid)
+
+            final = torchvision.utils.make_grid(rows, nrow=1)
+            filename = "Grid-{:06}_e-{:06}_b-{:06}.png".format(
+                    global_step,
+                    current_epoch,
+                    batch_idx)
             path = os.path.join(root, filename)
             os.makedirs(os.path.split(path)[0], exist_ok=True)
-            Image.fromarray(grid).save(path)
+            Image.fromarray(final).save(path)
 
     def log_img(self, pl_module, batch, batch_idx, split="train"):
         check_idx = batch_idx if self.log_on_batch_idx else pl_module.global_step
@@ -392,19 +413,25 @@ class ImageLogger(Callback):
             with torch.no_grad():
                 images = pl_module.log_images(batch, split=split, **self.log_images_kwargs)
 
+            images_ = {}
             for k in images:
-                N = min(images[k].shape[0], self.max_images)
-                images[k] = images[k][:N]
-                if isinstance(images[k], torch.Tensor):
-                    images[k] = images[k].detach().cpu()
-                    if self.clamp:
-                        images[k] = torch.clamp(images[k], -1., 1.)
+                if isinstance(images[k], dict):
+                    for key in images[k]:
+                        N = min(len(images[k][key]), self.max_images)
+                        images_[key] = images[k][key][:N]
+                else:
+                    N = min(images[k].shape[0], self.max_images)
+                    images_[k] = images[k][:N]
+                    if isinstance(images[k], torch.Tensor):
+                        images_[k] = images[k].detach().cpu()
+                        if self.clamp:
+                            images_[k] = torch.clamp(images[k], -1., 1.)
 
-            self.log_local(pl_module.logger.save_dir, split, images,
+            self.log_local(pl_module.logger.save_dir, split, images_,
                            pl_module.global_step, pl_module.current_epoch, batch_idx)
 
             logger_log_images = self.logger_log_images.get(logger, lambda *args, **kwargs: None)
-            logger_log_images(pl_module, images, pl_module.global_step, split)
+            logger_log_images(pl_module, images_, pl_module.global_step, split)
 
             if is_train:
                 pl_module.train()
