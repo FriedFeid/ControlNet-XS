@@ -1812,7 +1812,7 @@ class LatentUpscaleFinetuneDiffusion(LatentFinetuneDiffusion):
 
 
 class TwoStreamControlLDM(LatentDiffusion):
-
+    # Friedrich: TODO: Log images amount as hyperparameters
     def __init__(self, control_stage_config, control_key, sd_locked=True, sync_path=None, synch_control=True,
                  control_mode='canny', ckpt_path_ctr=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1886,7 +1886,7 @@ class TwoStreamControlLDM(LatentDiffusion):
             return self.first_stage_model.decode(z, hint=hint)
 
     @torch.no_grad()
-    def log_images(self, batch, N=4, n_row=2, sample=False, ddim_steps=50, ddim_eta=0.0, return_keys=None,
+    def log_images(self, batch, N=8, n_row=2, sample=False, ddim_steps=50, ddim_eta=0.0, return_keys=None,
                    quantize_denoised=True, inpaint=True, plot_denoise_rows=False, plot_progressive_rows=True,
                    plot_diffusion_rows=False, unconditional_guidance_scale=9.0, unconditional_guidance_label=None,
                    use_ema_scope=True,

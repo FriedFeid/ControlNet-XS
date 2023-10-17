@@ -141,4 +141,5 @@ lightning:
     accumulate_grad_batches: 1
     accelerator: cuda
     max_steps: 500000
-    devices: 5, #1,2,3
+    devices: 6, #1,2,3
+    log_every_n_steps: 5

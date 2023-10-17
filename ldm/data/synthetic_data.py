@@ -302,11 +302,11 @@ class BlockWorld(Dataset):
         for key in self.control:
             if key == 'Env':
                 hints.append(instance_[key])
-                grid['Env'] = instance_[key]
+                grid['Env'] = np.clip(np.moveaxis(instance_[key], -1, 0), 0, 1) * 2. - 1.
                 controls += 1
             else:
                 hints.append(instance_[key])
-                grid[key] = (instance_[key])
+                grid[key] = np.moveaxis(instance_[key], -1, 0) * 2. - 1.
                 controls += 1
 
         example = {}

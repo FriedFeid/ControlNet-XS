@@ -360,7 +360,7 @@ class ImageLogger(Callback):
 
     @rank_zero_only
     def log_local(self, save_dir, split, images,
-                  global_step, current_epoch, batch_idx):
+                  global_step, current_epoch, batch_idx, pl_module):
         root = os.path.join(save_dir, "images", split)
         if self.singel_log:
             for k in images:
@@ -381,15 +381,24 @@ class ImageLogger(Callback):
         else:
             rows = []
             for key in images:
-                grid = torchvision.utils.make_grid(images[key], nrow=self.max_images)
+                grid = torchvision.utils.make_grid(images[key][:self.max_images], nrow=self.max_images)
                 if self.rescale:
-                    grid = (grid + 1.0) / 2.0  # -1,1 -> 0,1; c,h,w
-                grid = grid.transpose(0, 1).transpose(1, 2).squeeze(-1)
-                grid = grid.numpy()
-                grid = (grid * 255).astype(np.uint8)
-                rows.append(grid)
+                    rows.append((grid + 1.0) / 2.)
+                else:
+                    rows.append(grid)
 
             final = torchvision.utils.make_grid(rows, nrow=1)
+            final = final.transpose(0, 1).transpose(1, 2).squeeze(-1)
+            final = final.numpy()
+
+            tag = f"{split}/Grid {current_epoch}"
+            pl_module.logger.experiment.add_image(
+                                tag, final,
+                                global_step=pl_module.global_step
+                                                  )
+
+            final = (final * 255).astype(np.uint8)
+
             filename = "Grid-{:06}_e-{:06}_b-{:06}.png".format(
                     global_step,
                     current_epoch,
@@ -418,17 +427,17 @@ class ImageLogger(Callback):
                 if isinstance(images[k], dict):
                     for key in images[k]:
                         N = min(len(images[k][key]), self.max_images)
-                        images_[key] = images[k][key][:N]
+                        images_[key] = images[k][key].detach().cpu()[:N]
                 else:
                     N = min(images[k].shape[0], self.max_images)
-                    images_[k] = images[k][:N]
                     if isinstance(images[k], torch.Tensor):
-                        images_[k] = images[k].detach().cpu()
+                        images_[k] = images[k].detach().cpu()[:N]
                         if self.clamp:
-                            images_[k] = torch.clamp(images[k], -1., 1.)
+                            images_[k] = torch.clamp(images_[k], -1., 1.)
 
             self.log_local(pl_module.logger.save_dir, split, images_,
-                           pl_module.global_step, pl_module.current_epoch, batch_idx)
+                           pl_module.global_step, pl_module.current_epoch, batch_idx,
+                           pl_module)
 
             logger_log_images = self.logger_log_images.get(logger, lambda *args, **kwargs: None)
             logger_log_images(pl_module, images_, pl_module.global_step, split)
