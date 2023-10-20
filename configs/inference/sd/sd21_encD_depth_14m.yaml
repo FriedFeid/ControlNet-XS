@@ -17,8 +17,8 @@ model:
     monitor: val/loss_simple_ema
     scale_factor: 0.18215
     use_ema: false
-    sync_path: /PATH/TO/STABLEDIFFUSION/v2-1_512-ema-pruned.ckpt     #  path to the StableDiffusion v 2.1 weights
-    ckpt_path_ctr: ./checkpoints/sd21_encD_depth_14m.ckpt            #  path to the ControlNet-XS weights
+    sync_path: /export/data/vislearn/rother_subgroup/feiden/models/pretrained/stable_diffusion/v2-1_512-ema-pruned.ckpt  #  path to the StableDiffusion v 2.1 weights
+    ckpt_path_ctr: /export/data/vislearn/rother_subgroup/feiden/models/pretrained/ControlNet-XS/sd21_encD_depth_14m.ckpt            #  path to the ControlNet-XS weights
     synch_control: false
     control_mode: midas
     control_stage_config:

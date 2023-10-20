@@ -390,14 +390,14 @@ class ImageLogger(Callback):
             final = torchvision.utils.make_grid(rows, nrow=1)
             final = final.transpose(0, 1).transpose(1, 2).squeeze(-1)
             final = final.numpy()
+            final = (final * 255).astype(np.uint8)
 
-            tag = f"{split}/Grid {current_epoch}"
+            tag = f"{split}/Grid"
             pl_module.logger.experiment.add_image(
                                 tag, final,
-                                global_step=pl_module.global_step
+                                global_step=pl_module.global_step, 
+                                dataformats='HWC'
                                                   )
-
-            final = (final * 255).astype(np.uint8)
 
             filename = "Grid-{:06}_e-{:06}_b-{:06}.png".format(
                     global_step,
