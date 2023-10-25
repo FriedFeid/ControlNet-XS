@@ -1,10 +1,10 @@
-from ldm.data.synthetic_data import BlockWorld
+from ldm.data.synthetic_dataNoShadow import BlockWorld
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 
 dset = BlockWorld(
                  size=None, random_resized_crop=False,
-                 interpolation='bicubic', scale=[1.0, 1.0], control=['Depth', 'Env', 'SSphere'],
+                 interpolation='bicubic', scale=[1.0, 1.0], control=['Depth', 'Edges'],
                  full_set=False, data_start=50_000, data_stop=50_400,
                  data_root=None,
                  use_pillow=True
@@ -19,9 +19,10 @@ for k in ["image", "caption", 'control_grid']:
         print(ex[k].shape)
     except:
         print(ex[k])
-    if k == 'control_grid':
-        plt.imshow(ex[k])
-        plt.savefig('control_gird.png')
+    # if k == 'control_grid':
+        
+    #     plt.imshow(ex[k])
+    #     plt.savefig('control_gird.png')
 
 train_dataloader = DataLoader(dset, batch_size=8, shuffle=True)
 

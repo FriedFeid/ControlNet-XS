@@ -25,6 +25,8 @@ from pytorch_lightning.utilities import rank_zero_info
 from ldm.data.base import Txt2ImgIterableBaseDataset
 from ldm.util import instantiate_from_config
 
+_ = LearningRateMonitor()
+
 # import warnings
 # warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -395,7 +397,7 @@ class ImageLogger(Callback):
             tag = f"{split}/Grid"
             pl_module.logger.experiment.add_image(
                                 tag, final,
-                                global_step=pl_module.global_step, 
+                                global_step=pl_module.global_step,
                                 dataformats='HWC'
                                                   )
 

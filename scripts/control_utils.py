@@ -23,6 +23,9 @@ from ldm.models.diffusion.ddim import DDIMSampler
 from annotator.midas import MidasDetector
 from ldm.data.util import resize_image_pil
 
+from annotator.openpose.body import Body
+from annotator.openpose.util import draw_bodypose
+
 
 def get_state_dict(d):
     return d.get('state_dict', d)
@@ -130,6 +133,18 @@ def get_midas_depth(image, midas=MidasDetector(), max_resolution=512, size=512):
     image = resize_image_pil(image, resolution=min(min(*image.shape[:-1]), max_resolution))
     depth, _ = midas(image)
     return depth
+
+
+def get_openpose_pose(image):
+    image = np.array(image)[:, :, [2, 1, 0]].astype(np.float32)
+
+    body_estimation = Body('/export/home/ffeiden/Projects/ControlNet-XS/annotator/ckpts/body_pose_model.pth')
+    candidate, subset = body_estimation(image)
+
+    image = np.ascontiguousarray(image, dtype=np.uint8)
+    canvas = draw_bodypose(np.zeros_like(image), candidate, subset)
+
+    return canvas[:, :, [2, 1, 0]]
 
 
 def get_canny_edges(image, size=512, low_th=50, high_th=200):
