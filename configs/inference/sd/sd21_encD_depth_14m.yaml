@@ -18,7 +18,7 @@ model:
     scale_factor: 0.18215
     use_ema: false
     sync_path: /export/data/vislearn/rother_subgroup/feiden/models/pretrained/stable_diffusion/v2-1_512-ema-pruned.ckpt  #  path to the StableDiffusion v 2.1 weights
-    ckpt_path_ctr: /export/data/vislearn/rother_subgroup/feiden/models/pretrained/ControlNet-XS/sd21_encD_depth_14m.ckpt            #  path to the ControlNet-XS weights
+    ckpt_path_ctr: /export/data/vislearn/rother_subgroup/dzavadsk/models/trained_models/ControlNet/sd/midas/2023-08-16T11-43-50_cross_encD_cat_20p_depth/checkpoints/trainstep_checkpoints/90000.ckpt            #  path to the ControlNet-XS weights
     synch_control: false
     control_mode: midas
     control_stage_config:

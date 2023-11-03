@@ -300,6 +300,6 @@ def get_sd_sample(
     x_samples = (einops.rearrange(x_samples, 'b c h w -> b h w c') * 127.5 + 127.5).cpu().numpy().clip(0, 255).astype(np.uint8)
 
     #  reset scales
-    model.control_model.scale_list = model.control_model.scale_list * 0. + 1.
+    # model.control_model.scale_list = model.control_model.scale_list * 0. + 1.
 
     return x_samples, control

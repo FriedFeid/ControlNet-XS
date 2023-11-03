@@ -16,7 +16,7 @@ model:
           target: sgm.modules.diffusionmodules.discretizer.LegacyDDPMDiscretization
     sd_locked: true
     skip_wrapper: true
-    ckpt_path: /export/data/vislearn/rother_subgroup/feiden/models/pretrained/stable_diffusion_XL/sdxl_kitti.safetensors     #  path to the StableDiffusion-XL weights
+    ckpt_path: /export/data/vislearn/rother_subgroup/feiden/models/pretrained/stable_diffusion_XL/sd_xl_base_1.0_0.9vae.safetensors     #  path to the StableDiffusion-XL weights
     ckpt_path_control: /export/data/vislearn/rother_subgroup/feiden/models/pretrained/ControlNet-XS/sdxl_encD_canny_48m.safetensors          #  path to the ControlNet-XS weights
     network_config:
       target: sgm.modules.diffusionmodules.twoStreamControl.TwoStreamControlNet
