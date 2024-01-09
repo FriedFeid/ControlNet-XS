@@ -92,6 +92,44 @@ def create_image_grid(images: np.ndarray, grid_size=None):
     return grid
 
 
+def new_create_image_grid(images: np.ndarray, grid_size=None):
+    """
+    Create a grid with the fed images
+    Args:
+        images (np.array): array of images
+        grid_size (tuple(int)): size of grid (grid_width, grid_height)
+    Returns:
+        grid (np.array): image grid of size grid_size
+    """
+    # Sanity check
+    assert images.ndim == 3 or images.ndim == 4, f'Images has {images.ndim} dimensions (shape: {images.shape})!'
+    num, img_h, img_w, c = images.shape
+    # If user specifies the grid shape, use it
+    if grid_size is not None:
+        grid_w, grid_h = tuple(grid_size)
+        # If one of the sides is None, then we must infer it (this was divine inspiration)
+        if grid_w is None:
+            grid_w = num // grid_h + min(num % grid_h, 1)
+        elif grid_h is None:
+            grid_h = num // grid_w + min(num % grid_w, 1)
+
+    # Otherwise, we can infer it by the number of images (priority is given to grid_w)
+    else:
+        grid_w = max(int(np.ceil(np.sqrt(num))), 1)
+        grid_h = max((num - 1) // grid_w + 1, 1)
+
+    # Sanity check
+    assert grid_w * grid_h >= num, 'Number of rows and columns must be greater than the number of images!'
+    # Get the grid
+    grid = np.zeros([grid_h * img_h, grid_w * img_h] + list(images.shape[-1:]), dtype=images.dtype)
+    # Paste each image in the grid
+    for idx in range(num):
+        x = (idx % grid_w) * img_w
+        y = (idx // grid_w) * img_h
+        grid[y:y + img_h, x:x + img_w, ...] = images[idx]
+    return grid
+
+
 def get_edge_hint(
     image,    # source image
     version='cv2',   # diffusion version [1.5, 2.1]
@@ -248,6 +286,118 @@ def get_sdxl_sample(
     model.model.scale_list = model.model.scale_list * 0. + 1.
 
     return x_samples, control
+
+def new_get_sdxl_sample(
+        ds,
+        model,
+        num_samples=2,
+        seed=None,
+        scale=9.5,
+        eta=0.5,
+        ddim_steps=25,
+        prompt='',
+        idx=None,
+        control_scale=1.,
+        shape=[4, 64, 64],
+        n_prompt='longbody, lowres, bad anatomy, extra digit, fewer digits, cropped, worst quality, low quality',
+        recalculate_hint=False,
+        control_mode='canny',
+        control_key='hint',
+        low_th=100,
+        high_th=250,
+        control_sequence='equal',
+):
+    print('[REWRITE SCALING INTO FORWARD FUNCTION]')
+    # model = copy.deepcopy(model)
+
+    model = model.cuda()
+
+    model.sampler.num_steps = ddim_steps
+    model.sampler.s_noise = eta
+    scale_schedule = lambda scale, sigma: scale  # independent of step
+    model.sampler.guider.scale_schedule = partial(scale_schedule, scale)
+    # print(f'[GENERATING SAMPLE SET WITH {ddim_steps} STEPS AND ETA {eta}]')
+
+    if float(control_scale) != 1.0 or control_sequence == 'linear':
+        if type(model).__name__ == 'ControlLDM':
+            model.control_scales = [(control_scale ** float(12 - i)) for i in range(13)]
+            print(f'[CONTROL CORRECTION OF {type(model).__name__} SCALED WITH {control_scale}]')
+        elif type(model).__name__ == 'TwoStreamControlLDM':
+            model.control_model.scale_controls(control_scale)
+            print(f'[CONTROL CORRECTION OF {type(model).__name__} SCALED WITH {control_scale}]')
+        elif type(model.model).__name__ == 'TwoStreamControlNet':
+            model.model.scale_controls(control_scale, sequence=control_sequence)
+            print(f'[CONTROL CORRECTION OF {type(model).__name__} SCALED WITH {control_scale}]')
+        else:
+            print(f'[SCALING CONTROL FOR {type(model).__name__} FAILED]')
+
+    if idx is None:
+        idx_list = range(len(ds))
+    elif isinstance(idx, list):
+        idx_list = idx
+    else:
+        idx_list = [idx]
+
+    sample_list = []
+    control_list = []
+
+    for idx in idx_list:
+        current_prompt = prompt[idx] if isinstance(prompt, list) else prompt
+        detected_map = ds[idx][control_key]
+        if detected_map.shape[0] == 3:
+            detected_map = einops.rearrange(detected_map, 'c h w -> h w c')
+            if isinstance(detected_map, torch.Tensor):
+                detected_map = np.array(detected_map)
+
+        control = torch.stack([tt.ToTensor()(ds[idx]['hint'][..., None].repeat(3, 2))] * num_samples).float().to('cuda')
+        # control = torch.from_numpy(ds[idx]['hint'].copy()).float().cuda()
+        # control = torch.stack([control for _ in range(num_samples)], dim=0)
+        # control = einops.rearrange(control, 'b h w c -> b c h w').clone().to('cuda')
+
+        sampling_kwargs = {'hint': control}
+
+        if seed is None:
+            seed = 1999158951
+        seed_everything(seed)
+
+        batch = get_batch(ds_instance=ds[idx], num_samples=num_samples)
+        batch['caption'] = [current_prompt or ds[idx]['caption']] * num_samples
+
+        for k in batch:
+            if isinstance(batch[k], torch.Tensor):
+                batch[k] = batch[k].to('cuda')
+
+        batch_uc = copy.deepcopy(batch)
+        batch_uc['caption'] = [n_prompt] * num_samples
+
+        c, uc = model.conditioner.get_unconditional_conditioning(
+            batch,
+            batch_uc=batch_uc,
+            force_uc_zero_embeddings=None
+            if len(model.conditioner.embedders) > 0
+            else [],
+        )
+
+        for k in c:
+            if isinstance(c[k], torch.Tensor):
+                c[k], uc[k] = map(lambda y: y[k].to('cuda'), (c, uc))
+
+        with model.ema_scope("Plotting"):
+            samples = model.sample(
+                c, shape=shape, uc=uc, batch_size=num_samples, **sampling_kwargs
+            )
+
+        x_samples = model.decode_first_stage(samples)
+        x_samples = (einops.rearrange(
+            x_samples, 'b c h w -> b h w c'
+        ) * 127.5 + 127.5).cpu().numpy().clip(0, 255).astype(np.uint8)
+
+        sample_list.append(x_samples)
+        control_list.append(control)
+
+        # return x_samples, out_grid_final, control
+        return sample_list, control_list
+
 
 
 def get_sd_sample(
